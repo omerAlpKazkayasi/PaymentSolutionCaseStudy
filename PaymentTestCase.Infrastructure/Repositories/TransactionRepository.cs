@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PaymentIntegration.Infrastructure.Persistence;
-using PaymentTestCase.Domain.Abstract;
+using PaymentTestCase.Domain.Abstract.Repositories;
 using PaymentTestCase.Domain.Entities;
 using PaymentTestCase.Infrastructure.Persistence;
 
@@ -18,8 +18,10 @@ public class TransactionRepository : EfRepository<Transaction>, ITransactionRepo
 
     public async Task<Transaction?> GetByOrderAsync(string bank, string orderReference, CancellationToken ct)
     {
-        return await _paymentDbContext.Transactions
-            .Include(t => t.Details)
-            .FirstOrDefaultAsync(t => t.Bank == bank && t.OrderReference == orderReference, ct);
+        //return await _paymentDbContext.Transactions
+        //    .Include(t => t.Details)
+        //    .FirstOrDefaultAsync(t => t.Bank == bank && t.OrderReference == orderReference, ct);
+
+        return null;
     }    
 }

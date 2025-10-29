@@ -4,12 +4,12 @@ namespace PaymentTestCase.Infrastructure.Banks;
 
 public sealed class GarantiGateway : IBankGateway
 {
-    public Task<(bool, string?)> PayAsync(string orderReference, decimal amount, CancellationToken ct)
-        => Task.FromResult((true, $"GA-{orderReference}-{Guid.NewGuid():N}"));
+    public Task<(bool, string?)> PayAsync(int orderNumber, decimal amount, CancellationToken cancellationToken)
+        => Task.FromResult((true, $"GA-{orderNumber}-{Guid.NewGuid():N}"));
 
-    public Task<(bool, string?)> CancelAsync(string orderReference, decimal amount, CancellationToken ct)
-        => Task.FromResult((true, $"GA-CANCEL-{Guid.NewGuid():N}"));
+    public Task<(bool, string?)> CancelAsync(int orderNumber, decimal amount, CancellationToken cancellationToken)
+        => Task.FromResult((true, $"GA-CANCEL-{orderNumber}-{Guid.NewGuid():N}"));
 
-    public Task<(bool, string?)> RefundAsync(string orderReference, decimal amount, CancellationToken ct)
-        => Task.FromResult((true, $"GA-REFUND-{Guid.NewGuid():N}"));
+    public Task<(bool, string?)> RefundAsync(int orderNumber, decimal amount, CancellationToken cancellationToken)
+        => Task.FromResult((true, $"GA-REFUND-{orderNumber}-{Guid.NewGuid():N}"));
 }

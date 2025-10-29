@@ -9,9 +9,4 @@ public abstract class BaseEntity : IEntity
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
-
-    public bool IsDeleted => DeletedAt.HasValue;
-
-    public void MarkUpdated() => UpdatedAt = DateTimeOffset.UtcNow;
-    public void MarkDeleted() => DeletedAt = DateTimeOffset.UtcNow;
 }
