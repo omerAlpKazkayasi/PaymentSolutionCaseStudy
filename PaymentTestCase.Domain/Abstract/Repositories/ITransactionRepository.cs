@@ -1,6 +1,6 @@
 ﻿using PaymentTestCase.Domain.Entities;
 
-namespace PaymentTestCase.Domain.Abstract;
+namespace PaymentTestCase.Domain.Abstract.Repositories;
 
 public interface ITransactionRepository : IRepository<Transaction>
 {

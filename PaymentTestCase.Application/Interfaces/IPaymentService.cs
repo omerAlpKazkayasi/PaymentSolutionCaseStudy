@@ -4,7 +4,9 @@ namespace PaymentTestCase.Application.Interfaces;
 
 public interface IPaymentService
 {
-    Task<Transaction> PayAsync(string bankId, string orderReference, decimal amount, CancellationToken ct);
-    Task<Transaction> CancelAsync(string bankId, string orderReference, decimal amount, CancellationToken ct);
-    Task<Transaction> RefundAsync(string bankId, string orderReference, decimal amount, CancellationToken ct);
+    Task PayAsync(string bank, Guid orderId, CancellationToken cancellationToken);
+
+    Task CancelAsync(Guid orderId, decimal cancelAmount, CancellationToken cancellationToken);
+
+    Task RefundAsync(Guid orderId, decimal amount, CancellationToken cancellationToken);
 }

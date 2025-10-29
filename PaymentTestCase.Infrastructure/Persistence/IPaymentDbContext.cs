@@ -10,6 +10,14 @@ namespace PaymentTestCase.Infrastructure.Persistence;
 
 public interface IPaymentDbContext
 {
+    DbSet<Product> Products { get; }
+
+    DbSet<Order> Orders { get; }
+
+    DbSet<OrderItem> OrderItems { get; }
+
+    DbSet<Stock> Stocks { get; }
+
     DbSet<Transaction> Transactions { get; }
 
     DbSet<TransactionDetail> TransactionDetails { get; }
