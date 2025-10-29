@@ -31,7 +31,6 @@ public class ProductService : IProductService
 
     public async Task<IEnumerable<ProductDto>> GetAsync(Guid? id, string? name, CancellationToken cancellationToken)
     {
-
         Expression<Func<Product, bool>> predicate = p =>
             (string.IsNullOrEmpty(name) || p.Name.Contains(name)) &&
             (!id.HasValue || p.Id == id.Value);

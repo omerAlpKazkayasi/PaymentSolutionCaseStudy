@@ -28,6 +28,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
             .HasForeignKey(i => i.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Property(x => x.Id).ValueGeneratedNever();
+
         builder.HasOne<Transaction>()
             .WithOne(t => t.Order)
             .HasForeignKey<Transaction>(t => t.OrderId)

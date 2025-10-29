@@ -1,8 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PaymentIntegration.Infrastructure.Persistence;
 using PaymentTestCase.Domain.Abstract.Repositories;
+using PaymentTestCase.Domain.Constants;
 using PaymentTestCase.Domain.Entities;
 using PaymentTestCase.Infrastructure.Persistence;
+using System.Linq.Expressions;
+using System.Linq;
 
 namespace PaymentTestCase.Infrastructure.Repositories;
 
@@ -16,12 +19,36 @@ public class TransactionRepository : EfRepository<Transaction>, ITransactionRepo
         _paymentDbContext = paymentDbContext;
     }
 
-    public async Task<Transaction?> GetByOrderAsync(string bank, string orderReference, CancellationToken ct)
+    public async Task<Transaction> GetTransactionWithTransactionDetails(Guid orderId, CancellationToken cancellationToken)
     {
-        //return await _paymentDbContext.Transactions
-        //    .Include(t => t.Details)
-        //    .FirstOrDefaultAsync(t => t.Bank == bank && t.OrderReference == orderReference, ct);
+        var transaction = await _paymentDbContext.Transactions
+            .Include(o => o.TransactionDetails)
+            .FirstOrDefaultAsync(o =>
+                o.OrderId == orderId &&
+                o.Status == TransactionStatuses.Success,
+                cancellationToken);
 
-        return null;
-    }    
+        if (transaction is null || transaction.TransactionDetails.Count == 0)
+        {
+            throw new KeyNotFoundException("transaction or transaction details not found.");
+        }
+        else
+        {
+            return transaction;
+        }
+    }
+
+    public async Task<IEnumerable<Transaction>> GetWithDetailsAsync(
+        Expression<Func<Transaction, bool>>? predicate,
+        CancellationToken cancellationToken)
+    {
+        var query = _paymentDbContext.Transactions
+            .Include(x => x.TransactionDetails)
+            .AsQueryable();
+
+        if (predicate != null)
+            query = query.Where(predicate);
+
+        return await query.ToListAsync(cancellationToken);
+    }
 }

@@ -18,12 +18,12 @@ public sealed class BankGatewayFactory : IBankGatewayFactory
         _provider = provider;
     }
 
-    public IBankGateway Resolve(string bankId)
-        => bankId switch
+    public IBankGateway Resolve(string bank)
+        => bank switch
         {
             BankCodes.Akbank => _provider.GetRequiredService<AkbankGateway>(),
             BankCodes.Garanti => _provider.GetRequiredService<GarantiGateway>(),
             BankCodes.YapiKredi => _provider.GetRequiredService<YapiKrediGateway>(),
-            _ => throw new KeyNotFoundException($"Unsupported bankId: {bankId}")
+            _ => throw new KeyNotFoundException($"Unsupported bankId: {bank}")
         };
 }

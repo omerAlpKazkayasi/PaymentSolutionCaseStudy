@@ -20,6 +20,8 @@ public class TranslationDetailConfiguration : IEntityTypeConfiguration<Transacti
             .IsRequired()
             .HasMaxLength(50);
 
+        builder.Property(x => x.Id).ValueGeneratedNever();
+
         builder.Property(d => d.Amount)
             .HasPrecision(18, 2);
     }

@@ -14,6 +14,6 @@ public class CancelCommandHandler : IRequestHandler<CancelCommand>
 
     public async Task Handle(CancelCommand request, CancellationToken cancellationToken)
     {
-        await _paymentService.CancelAsync(request.bank, request.orderReference, request.amount, cancellationToken);
+        await _paymentService.CancelAsync(request.orderId,  request.amount, cancellationToken);
     }
 }

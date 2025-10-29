@@ -11,9 +11,9 @@ public class OrderItem : BaseEntity
 
     protected OrderItem() { }
 
-    public OrderItem(Guid id, Guid orderId, Guid productId, int quantity, decimal unitPrice)
+    public OrderItem(Guid orderId, Guid productId, int quantity, decimal unitPrice)
     {
-        Id = id;
+        Id = Guid.NewGuid();
         SetOrderId(orderId);
         SetProductId(productId);
         SetQuantity(quantity);

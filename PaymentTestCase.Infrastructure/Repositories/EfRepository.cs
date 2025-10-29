@@ -32,7 +32,6 @@ public class EfRepository<T> : IRepository<T> where T : BaseEntity
 
     public async Task<IList<T>> GetAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
-        //fixxxxxxxx
         var query = _dbSet.AsQueryable();
         if (predicate != null)
             query = query.Where(predicate);
@@ -73,5 +72,7 @@ public class EfRepository<T> : IRepository<T> where T : BaseEntity
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
-    => await _context.SaveChangesAsync(cancellationToken);
+    {
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

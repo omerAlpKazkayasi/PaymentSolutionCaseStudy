@@ -30,5 +30,11 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .WithOne()
             .HasForeignKey(d => d.TransactionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Property(x => x.Id).ValueGeneratedNever();
+
+        builder.Navigation(t => t.TransactionDetails)
+       .HasField("_details")
+       .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
