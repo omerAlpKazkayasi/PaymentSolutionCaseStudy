@@ -7,6 +7,7 @@ public class OrderItem : BaseEntity
     public Guid OrderId { get; private set; }
     public Guid ProductId { get; private set; }
     public int Quantity { get; private set; }
+    public int? LeftQuantity { get; private set; }
     public decimal UnitPrice { get; private set; }
 
     protected OrderItem() { }
@@ -39,6 +40,13 @@ public class OrderItem : BaseEntity
         if (value <= 0)
             throw new ArgumentException("Quantity must be greater than zero.", nameof(Quantity));
         Quantity = value;
+    }
+
+    public void SetLeftQuantity(int value)
+    {
+        if (value <= 0)
+            throw new ArgumentException("Quantity must be greater than zero.", nameof(LeftQuantity));
+        LeftQuantity = value;
     }
 
     public void SetUnitPrice(decimal value)

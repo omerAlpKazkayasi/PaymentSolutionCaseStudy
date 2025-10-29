@@ -14,6 +14,6 @@ public class RefundCommandHandler : IRequestHandler<RefundCommand>
 
     public async Task Handle(RefundCommand request, CancellationToken cancellationToken)
     {
-        await _paymentService.RefundAsync(request.orderId, request.amount, cancellationToken);
+        await _paymentService.RefundAsync(request.orderId, request.productId ,request.quantity, cancellationToken);
     }
 }

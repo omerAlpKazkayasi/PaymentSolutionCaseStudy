@@ -95,96 +95,191 @@ public sealed class PaymentService : IPaymentService
         await _stockRepository.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task CancelAsync(Guid orderId, decimal cancelAmount, CancellationToken cancellationToken)
+    public async Task CancelAsync(Guid orderId, Guid productId, int quantity, CancellationToken cancellationToken)
     {
-        var existingTransaction = await _transactionRepository.GetTransactionWithTransactionDetails(
+        await ProcessTransactionAsync(
             orderId,
+            productId,
+            quantity,
+            TransactionTypes.Cancel,
             cancellationToken);
-
-        if (existingTransaction == null)
-        {
-            throw new KeyNotFoundException("Transaction not found.");
-        }
-
-        var transaction = existingTransaction;
-        var bank = transaction.Bank;
-
-        var bankRules = _rulesFactory.Resolve(bank);
-
-        if (!bankRules.CanCancel(transaction, DateTimeOffset.UtcNow))
-        {
-            throw new InvalidOperationException("Cancel transaction cant handle becasue day its not the same day with sale.");
-        }
-
-        var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
-
-        if (order is null)
-        {
-            throw new InvalidOperationException("Order not exist");
-        }
-
-        if (cancelAmount > transaction.NetAmount)
-        {
-            throw new InvalidOperationException("Cancel amount exceeds the net amount of the transaction.");
-        }
-
-        var bankGateway = _gatewayFactory.Resolve(bank);
-
-        var (isCancelSuccessful, bankReference) = await bankGateway.CancelAsync(order.OrderNumber, cancelAmount, cancellationToken);
-
-        var status = isCancelSuccessful ? TransactionStatuses.Success : TransactionStatuses.Fail;
-
-        //stok geri eklemem gerekebilir eğer successe
-
-        transaction.SetNetAmount(cancelAmount, TransactionTypes.Cancel);
-        transaction.AddDetail(status: status, amount: cancelAmount, type: TransactionTypes.Cancel);
-
-        await _transactionRepository.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task RefundAsync(Guid orderId, decimal refundAmount, CancellationToken cancellationToken)
+    public async Task RefundAsync(Guid orderId, Guid productId, int quantity, CancellationToken cancellationToken)
     {
-        var existingTransaction = await _transactionRepository.GetTransactionWithTransactionDetails(
+        await ProcessTransactionAsync(
+            orderId,
+            productId,
+            quantity,
+            TransactionTypes.Refund,
+            cancellationToken);
+    }
+
+    private async Task ProcessTransactionAsync(
+    Guid orderId,
+    Guid productId,
+    int quantity,
+    string transactionType,
+    CancellationToken cancellationToken)
+    {
+        var transaction = await ValidateAndGetTransaction(orderId, transactionType, cancellationToken);
+
+        if (transaction == null)
+        {
+            throw new InvalidOperationException("Transaction validation failed.");
+        }
+
+        var (order, orderItem, amount) = await ValidateAndGetOrderData(
+            orderId,
+            productId,
+            quantity,
+            transaction.NetAmount,
+            cancellationToken);
+
+        var (isSuccessful, bankReference) = await ExecuteBankOperation(
+            transaction.Bank,
+            order.OrderNumber,
+            amount,
+            transactionType,
+            cancellationToken);
+
+        await UpdateAfterSuccessfulOperation(
+            productId,
+            quantity,
+            orderItem,
+            transaction,
+            amount,
+            transactionType,
+            isSuccessful,
+            cancellationToken);
+    }
+
+    private async Task<Transaction> ValidateAndGetTransaction(
+        Guid orderId,
+        string transactionType,
+        CancellationToken cancellationToken)
+    {
+        var transaction = await _transactionRepository.GetTransactionWithTransactionDetails(
             orderId,
             cancellationToken);
 
-        if (existingTransaction == null)
+        if (transaction == null)
         {
-            throw new KeyNotFoundException("Transaction not found.");
+            return null;
         }
 
-        var transaction = existingTransaction;
-        var bank = transaction.Bank;
+        var bankRules = _rulesFactory.Resolve(transaction.Bank);
 
-        var bankRules = _rulesFactory.Resolve(bank);
-
-        if (!bankRules.CanRefund(transaction, DateTimeOffset.UtcNow))
+        if (transactionType == TransactionTypes.Cancel)
         {
-            throw new InvalidOperationException("Cannot be returned because it has not even been one day");
+            if (!bankRules.CanCancel(transaction, DateTimeOffset.UtcNow))
+            {
+                return null;
+            }
+        }
+        else if (transactionType == TransactionTypes.Refund)
+        {
+            if (!bankRules.CanRefund(transaction, DateTimeOffset.UtcNow))
+            {
+                return null;
+            }
         }
 
-        var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        return transaction;
+    }
 
-        if (order is null)
+    private async Task<(Order order, OrderItem orderItem, decimal amount)> ValidateAndGetOrderData(
+        Guid orderId,
+        Guid productId,
+        int quantity,
+        decimal transactionNetAmount,
+        CancellationToken cancellationToken)
+    {
+        var order = await _orderRepository.GetOrderWithOrderItems(orderId, cancellationToken);
+
+        if (order is null || order.Items.Count == 0)
         {
             throw new InvalidOperationException("Order not exist");
         }
 
-        if (refundAmount > transaction.NetAmount)
+        var orderItem = order.Items.FirstOrDefault(i => i.ProductId == productId);
+
+        if (orderItem is null)
         {
-            throw new InvalidOperationException("Cancel amount exceeds the net amount of the transaction.");
+            throw new InvalidOperationException("Order item not exist");
         }
 
+        if (orderItem.LeftQuantity is not null && orderItem.LeftQuantity - quantity < 0)
+        {
+            throw new InvalidOperationException("Order item not exist");
+        }
+
+        var amount = orderItem.UnitPrice * quantity;
+
+        if (amount > transactionNetAmount)
+        {
+            throw new InvalidOperationException(
+                "Cancel amount exceeds the net amount of the transaction.");
+        }
+
+        return (order, orderItem, amount);
+    }
+
+    private async Task<(bool isSuccessful, string bankReference)> ExecuteBankOperation(
+        string bank,
+        int orderNumber,
+        decimal amount,
+        string transactionType,
+        CancellationToken cancellationToken)
+    {
         var bankGateway = _gatewayFactory.Resolve(bank);
 
-        var (isCancelSuccessful, bankReference) = await bankGateway.CancelAsync(order.OrderNumber, refundAmount, cancellationToken);
+        if (transactionType == TransactionTypes.Cancel)
+        {
+            return await bankGateway.CancelAsync(orderNumber, amount, cancellationToken);
+        }
+        else
+        {
+            return await bankGateway.RefundAsync(orderNumber, amount, cancellationToken);
+        }
+    }
 
-        var status = isCancelSuccessful ? TransactionStatuses.Success : TransactionStatuses.Fail;
+    private async Task UpdateAfterSuccessfulOperation(
+        Guid productId,
+        int quantity,
+        OrderItem orderItem,
+        Transaction transaction,
+        decimal amount,
+        string transactionType,
+        bool isSuccessful,
+        CancellationToken cancellationToken)
+    {
+        var status = isSuccessful ? TransactionStatuses.Success : TransactionStatuses.Fail;
 
-        //stok geri eklemem gerekebilir eğer successe
+        if (isSuccessful)
+        {
+            var stock = await _stockRepository.GetAsync(
+                s => s.ProductId == productId,
+                cancellationToken);
 
-        transaction.SetNetAmount(refundAmount, TransactionTypes.Refund);
-        transaction.AddDetail(status: status, amount: refundAmount, type: TransactionTypes.Refund);
+            if (stock is not null && stock.Count > 0)
+            {
+                stock[0].Increase(quantity);
+            }
+
+            if (orderItem.LeftQuantity is null)
+            {
+                orderItem.SetLeftQuantity(orderItem.Quantity - quantity);
+            }
+            else
+            {
+                orderItem.SetLeftQuantity(orderItem.LeftQuantity.Value - quantity);
+            }
+
+            transaction.SetNetAmount(amount, transactionType);
+        }
+
+        transaction.AddDetail(status: status, amount: amount, type: transactionType);
 
         await _transactionRepository.SaveChangesAsync(cancellationToken);
     }
