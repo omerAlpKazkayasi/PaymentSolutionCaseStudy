@@ -18,9 +18,9 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll([FromQuery] Guid? id, string? name, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll([FromQuery] GetProductsQuery query, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetProductsQuery(id, name), cancellationToken);
+        var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
     }
 

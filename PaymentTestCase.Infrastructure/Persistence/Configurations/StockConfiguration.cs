@@ -12,6 +12,8 @@ public class StockConfiguration : IEntityTypeConfiguration<Stock>
 
         builder.HasKey(s => s.Id);
 
+        builder.Property(x => x.Id).ValueGeneratedNever();
+
         builder.Property(s => s.Quantity)
             .IsRequired();
     }

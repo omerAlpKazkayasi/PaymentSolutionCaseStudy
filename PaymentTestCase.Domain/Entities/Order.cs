@@ -16,6 +16,7 @@ public class Order : BaseEntity
 
     public Order(int orderNumber, string status)
     {
+        Id = Guid.NewGuid();
         SetOrderNumber(orderNumber);
         SetStatus(status);
         CreatedAt = DateTime.UtcNow;
@@ -45,7 +46,7 @@ public class Order : BaseEntity
         if (quantity <= 0)
             throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
 
-        var item = new OrderItem(Guid.NewGuid(), Id, product.Id, quantity, product.Price);
+        var item = new OrderItem(Id, product.Id, quantity, product.Price);
         _items.Add(item);
         RecalculateTotal();
     }

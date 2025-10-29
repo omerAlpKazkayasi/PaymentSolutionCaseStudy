@@ -19,6 +19,8 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Price)
             .HasPrecision(18, 2);
 
+        builder.Property(x => x.Id).ValueGeneratedNever();
+
         builder.HasOne<Stock>()
             .WithOne()
             .HasForeignKey<Stock>(s => s.ProductId)

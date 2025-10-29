@@ -5,7 +5,7 @@ namespace PaymentTestCase.Domain.Entities;
 
 public class Transaction : BaseEntity
 {
-    private readonly List<TransactionDetail> _details = new();
+    private List<TransactionDetail> _details = new();
 
     public string Bank { get; private set; } = default!;
     public Guid OrderId { get; private set; }
@@ -13,19 +13,24 @@ public class Transaction : BaseEntity
     public decimal NetAmount { get; private set; }
     public DateTimeOffset TransactionDate { get; private set; }
     public string Status { get; private set; }
-    public IReadOnlyCollection<TransactionDetail> TransactionDetails => _details.AsReadOnly();
+    public virtual ICollection<TransactionDetail> TransactionDetails
+    {
+        get => _details;
+        private set => _details = value?.ToList() ?? new List<TransactionDetail>();
+    }
     public Order Order { get; private set; }
 
     protected Transaction() { }
 
-    public Transaction(Guid orderId, string bank, decimal totalAmount, string status)
+    public Transaction(Guid orderId, string bank, decimal totalAmount, string status, string type, decimal netAmount)
     {
         Id = Guid.NewGuid();
         SetOrderId(orderId);
         SetBank(bank);
-        SetAmounts(totalAmount);
+        SetAmounts(totalAmount, type);
         TransactionDate = DateTimeOffset.UtcNow;
         SetStatus(status);
+        SetNetAmount(netAmount, type);
     }
 
     public void SetOrderId(Guid value)
@@ -42,7 +47,7 @@ public class Transaction : BaseEntity
         Bank = value;
     }
 
-    public void SetNetAmount(decimal amount ,string type)
+    public void SetNetAmount(decimal amount, string type)
     {
         if (!TransactionTypes.All.Contains(type))
             throw new ArgumentException($"Invalid transaction type: {type}", nameof(type));
@@ -63,11 +68,18 @@ public class Transaction : BaseEntity
         }
     }
 
-    public void SetAmounts(decimal total)
+    public void SetAmounts(decimal total, string type)
     {
-        if (total < 0)
-            throw new ArgumentException("Amount cannot be negative.", nameof(total));
-        TotalAmount = total;
+        if (!TransactionTypes.All.Contains(type))
+            throw new ArgumentException($"Invalid transaction type: {type}", nameof(type));
+
+        TotalAmount = type switch
+        {
+            TransactionTypes.Sale => total,
+            TransactionTypes.Cancel => TotalAmount,
+            TransactionTypes.Refund => TotalAmount,
+            _ => TotalAmount
+        };
     }
 
     public void SetStatus(string value)
