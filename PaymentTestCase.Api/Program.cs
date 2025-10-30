@@ -11,6 +11,7 @@ using PaymentTestCase.Domain.Rules;
 using PaymentTestCase.Infrastructure.Banks;
 using PaymentTestCase.Infrastructure.Persistence;
 using PaymentTestCase.Infrastructure.Repositories;
+using PaymentTestCase.Infrastructure.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,5 +69,20 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<PaymentDbContext>();
+        await SeedData.SeedAsync(context);
+        Console.WriteLine("Seed data baþarýyla iþlendi.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"eed data yüklenirken hata oluþtu: {ex.Message}");
+    }
+}
 
 app.Run();
